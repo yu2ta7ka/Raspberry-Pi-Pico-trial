@@ -7,6 +7,7 @@
 use bsp::entry;
 use defmt::*;
 use defmt_rtt as _;
+use embedded_hal::digital::v2::InputPin;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_time::fixed_point::FixedPoint;
 use panic_probe as _;
@@ -56,13 +57,40 @@ fn main() -> ! {
 
     let mut led_pin = pins.led.into_push_pull_output();
 
+    let in_pin14 = pins.gpio14.into_pull_down_input();
+    let in_pin15 = pins.gpio15.into_pull_down_input();
+    let in_pin16 = pins.gpio16.into_pull_down_input();
+    let in_pin17 = pins.gpio17.into_pull_down_input();
+
     loop {
-        info!("on!");
-        led_pin.set_high().unwrap();
-        delay.delay_ms(500);
-        info!("off!");
-        led_pin.set_low().unwrap();
-        delay.delay_ms(500);
+        let is_low_pin14 = in_pin14.is_high().unwrap();
+        let is_low_pin15 = in_pin15.is_high().unwrap();
+        let is_low_pin16 = in_pin16.is_high().unwrap();
+        let is_low_pin17 = in_pin17.is_high().unwrap();
+        if is_low_pin14 {
+            led_pin.set_high().unwrap();
+        }
+
+        if is_low_pin15 {
+            led_pin.set_low().unwrap();
+        }
+
+        if is_low_pin16 {
+            info!("on!");
+            led_pin.set_high().unwrap();
+            delay.delay_ms(200);
+            info!("off!");
+            led_pin.set_low().unwrap();
+            delay.delay_ms(200);
+        }
+
+        if is_low_pin17 {
+            led_pin.set_high().unwrap();
+            delay.delay_ms(1000);
+            info!("off!");
+            led_pin.set_low().unwrap();
+            delay.delay_ms(1000);
+        }
     }
 }
 
