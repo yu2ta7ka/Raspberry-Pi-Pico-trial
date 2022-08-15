@@ -24,6 +24,12 @@ pub fn exit() -> ! {
     }
 }
 
+fn sleep() {
+    for _ in 0..10000 {
+        cortex_m::asm::nop();
+    }
+}
+
 #[cortex_m_rt::entry]
 fn main() -> ! {
     defmt::println!("Hello, world! yu2ta7ka");
@@ -70,23 +76,32 @@ fn main() -> ! {
     let row2 = pins.gpio21.into_pull_down_input();
 
     loop {
+        let mut keys: [u8; 6] = [0u8; 6];
+        let mut num_keys: usize = 0;
         dev.poll(&mut [&mut hid]);
 
         col1.set_high().ok().unwrap();
-        for _ in 0..10000 {
-            cortex_m::asm::nop();
-        }
+        sleep();
         if row1.is_high().ok().unwrap() {
+            keys[num_keys] = 0x1f;
+            num_keys += 1;
             defmt::println!("key 22");
         }
         if row2.is_high().ok().unwrap() {
+            keys[num_keys] = 0x1c;
+            num_keys += 1;
             defmt::println!("key 21");
         }
-        for _ in 0..10000 {
-            cortex_m::asm::nop();
-        }
-
+        sleep();
         col1.set_low().ok().unwrap();
+
+        let report = usbd_hid::descriptor::KeyboardReport {
+            modifier: 0,
+            reserved: 0,
+            leds: 0,
+            keycodes: keys,
+        };
+        hid.push_input(&report).ok();
     }
 
     exit()
