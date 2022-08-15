@@ -77,7 +77,10 @@ fn main() -> ! {
             cortex_m::asm::nop();
         }
         if row1.is_high().ok().unwrap() {
-            defmt::println!("push");
+            defmt::println!("key 22");
+        }
+        if row2.is_high().ok().unwrap() {
+            defmt::println!("key 21");
         }
         for _ in 0..10000 {
             cortex_m::asm::nop();
