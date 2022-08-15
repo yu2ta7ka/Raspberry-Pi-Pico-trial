@@ -62,8 +62,36 @@ fn main() -> ! {
         .serial_number("487")
         .build();
 
+    let mut count = 0;
     loop {
         dev.poll(&mut [&mut hid]);
+        if count == 10_000 {
+            let report = usbd_hid::descriptor::KeyboardReport {
+                modifier: 0, // https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2
+                reserved: 0,
+                leds: 0,
+                keycodes: [0x04, 0, 0, 0, 0, 0],
+            };
+            // push key
+            hid.push_input(&report).ok();
+        }
+
+        if count == 11_000 {
+            let report = usbd_hid::descriptor::KeyboardReport {
+                modifier: 0, // https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2
+                reserved: 0,
+                leds: 0,
+                keycodes: [0x00, 0, 0, 0, 0, 0],
+            };
+            // release key
+            hid.push_input(&report).ok();
+        }
+
+        if count >= 11_000 {
+            count = 0;
+        } else {
+            count += 1;
+        }
     }
 
     exit()
