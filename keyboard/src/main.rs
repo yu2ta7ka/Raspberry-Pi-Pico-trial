@@ -2,6 +2,7 @@
 #![no_std]
 
 use defmt_rtt as _;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
 use panic_probe as _;
 
 use bsp::hal;
@@ -62,36 +63,27 @@ fn main() -> ! {
         .serial_number("487")
         .build();
 
-    let mut count = 0;
+    let sio = hal::Sio::new(p.SIO);
+    let pins = bsp::Pins::new(p.IO_BANK0, p.PADS_BANK0, sio.gpio_bank0, &mut p.RESETS);
+    let mut col1 = pins.gpio16.into_push_pull_output();
+    let row1 = pins.gpio22.into_pull_down_input();
+    let row2 = pins.gpio21.into_pull_down_input();
+
     loop {
         dev.poll(&mut [&mut hid]);
-        if count == 10_000 {
-            let report = usbd_hid::descriptor::KeyboardReport {
-                modifier: 0, // https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2
-                reserved: 0,
-                leds: 0,
-                keycodes: [0x04, 0, 0, 0, 0, 0],
-            };
-            // push key
-            hid.push_input(&report).ok();
+
+        col1.set_high().ok().unwrap();
+        for _ in 0..10000 {
+            cortex_m::asm::nop();
+        }
+        if row1.is_high().ok().unwrap() {
+            defmt::println!("push");
+        }
+        for _ in 0..10000 {
+            cortex_m::asm::nop();
         }
 
-        if count == 11_000 {
-            let report = usbd_hid::descriptor::KeyboardReport {
-                modifier: 0, // https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2
-                reserved: 0,
-                leds: 0,
-                keycodes: [0x00, 0, 0, 0, 0, 0],
-            };
-            // release key
-            hid.push_input(&report).ok();
-        }
-
-        if count >= 11_000 {
-            count = 0;
-        } else {
-            count += 1;
-        }
+        col1.set_low().ok().unwrap();
     }
 
     exit()
